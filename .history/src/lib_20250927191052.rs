@@ -37,7 +37,6 @@ pub enum Shape{
 
 }
 
-// Define a Canvas structure 
 pub struct Canvas {
     width: u32,
     height: u32,
