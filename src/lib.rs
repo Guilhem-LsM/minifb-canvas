@@ -96,11 +96,33 @@ impl Canvas {
         let rtzr_area_min_x:i32 = *(vec![vertex_1.x, vertex_2.x, vertex_3.x]).iter().min().unwrap();
         let rtzr_area_max_y:i32 = *(vec![vertex_1.y, vertex_2.y, vertex_3.y]).iter().max().unwrap();
         let rtzr_area_min_y:i32 = *(vec![vertex_1.y, vertex_2.y, vertex_3.y]).iter().max().unwrap();
-        // The 4 points of the rectangle around the triangle
+        // The 2 points of the rectangle around the triangle
         let rtzr_point_top_left: Vec2 = Vec2::new(rtzr_area_min_x, rtzr_area_max_y);   
-        let rtzr_point_top_right: Vec2 = Vec2::new(rtzr_area_max_x, rtzr_area_max_y);   
-        let rtzr_point_bottom_left: Vec2 = Vec2::new(rtzr_area_min_x, rtzr_area_min_y);   
         let rtzr_point_bottom_right: Vec2 = Vec2::new(rtzr_area_max_x, rtzr_area_min_y);   
+        //Check every pixel in the rectangle
+        for i in 0..(rtzr_point_top_left.y-rtzr_point_bottom_right.y)*(rtzr_point_bottom_right.x-rtzr_point_top_left.x){
+            let mut cursor: Vec2 = rtzr_point_top_left;
+            // The 3 vector of the triangle
+            let segment_ab: f32 = Vec2::length(Vec2::sub(vertex_1,vertex_2));
+            let segment_bc: f32 = Vec2::length(Vec2::sub(vertex_2,vertex_3));
+            let segment_ca: f32 = Vec2::length(Vec2::sub(vertex_3,vertex_1));
+            // The 3 vector between the current point and the 3 vertex
+            let segment_h: f32 = Vec2::length(Vec2::sub(cursor,vertex_1));
+            let segment_i: f32 = Vec2::length(Vec2::sub(cursor,vertex_2));
+            let segment_g: f32 = Vec2::length(Vec2::sub(cursor,vertex_3));
+            // Get the 3 angle of the triangle relative to the cursor position, if > 180, the cursor is outside the triangle
+            let angle_a:f32 = ((segment_h.powf(2.0)+segment_ab.powf(2.0)-segment_i.powf(2.0))/(2.0*segment_h*segment_ab)).acos() + 
+            ((segment_ca.powf(2.0)+segment_h.powf(2.0)-segment_g.powf(2.0))/(2.0*segment_ca*segment_h));
+
+            let angle_b:f32 = ((segment_i.powf(2.0)+segment_ab.powf(2.0)-segment_h.powf(2.0))/(2.0*segment_i*segment_ab)).acos() + 
+            ((segment_bc.powf(2.0)+segment_i.powf(2.0)-segment_g.powf(2.0))/(2.0*segment_bc*segment_i));
+
+            let angle_c:f32 = ((segment_g.powf(2.0)+segment_bc.powf(2.0)-segment_i.powf(2.0))/(2.0*segment_g*segment_bc)).acos() + 
+            ((segment_ca.powf(2.0)+segment_g.powf(2.0)-segment_h.powf(2.0))/(2.0*segment_ca*segment_g));
+
+            let sum_angles: f32 = angle_a + angle_b + angle_c;
+
+        }
 
 
 
