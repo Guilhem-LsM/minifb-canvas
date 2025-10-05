@@ -1,5 +1,4 @@
 pub use minifb::*;
-use std::num::*;
 
 // Define a vector2 structure
 #[derive(Copy, Clone)]
@@ -46,10 +45,10 @@ impl Color {
         Color {r, g, b}
     }
 
-    pub fn encode_color(color:Color) -> u32{
-    let r = color.r as u32;
-    let g = color.g as u32;
-    let b = color.b as u32;
+    pub fn to_u32(&self) -> u32{
+    let r = self.r as u32;
+    let g = self.g as u32;
+    let b = self.b as u32;
 
     (r << 16) | (g << 8) | b
 }
@@ -58,10 +57,11 @@ impl Color {
 }
 
 // Define a Shape Enum
+#[derive(Clone)]
 pub enum Shape{
     TriangleByPoints {point_1: Vec2, point_2: Vec2, point_3: Vec2, color:Color},
     TriangleByPosition {position: Vec2, point_1: Vec2, point_2: Vec2, point_3: Vec2, color:Color},
-    Cricle {position: Vec2, color:Color},
+    Circle {position: Vec2, color:Color},
     Rectangle {position: Vec2, width: u32, height: u32, color:Color}
 
 }
@@ -77,14 +77,25 @@ pub struct Canvas {
 }
 
 impl Canvas {
-    pub fn new(width: u32, height: u32, background_color: Color, shapes_list: Vec<Shape>, buffer:Vec<u32> ) -> Self{
-        
-        Canvas { width, height, background_color, shapes_list, buffer }
+    pub fn new(width: u32, height: u32, background_color: Color, shapes_list: Vec<Shape>) -> Self{
+        let buffer: Vec<u32> = vec![background_color.to_u32(); (width*height) as usize];
+        Canvas { width, height, background_color, shapes_list, buffer}
 
     }
 
-    pub fn draw_triangle(&mut self, triangle: Shape) -> Vec<u32>{
+    // Get the 2D cross product by giving the 3 point of the 2 vector
+    pub fn _2d_cross_product(point_1: Vec2, point_2: Vec2, point_3: Vec2) -> bool {
+        (((point_2.x - point_1.x)*(point_3.y - point_1.y)) - ((point_2.y - point_1.y)*(point_3.x - point_1.x))) <= 0 
+    }
 
+    pub fn is_in_triangle(point_1: Vec2, point_2: Vec2, point_3: Vec2, point_4:Vec2) -> bool {
+        let a:bool = Self::_2d_cross_product(point_4, point_1, point_2);
+        let b:bool = Self::_2d_cross_product(point_4, point_2, point_3);
+        let c:bool = Self::_2d_cross_product(point_4, point_3, point_1);
+        (a, b, c) == (true, true, true)
+    }   
+
+    pub fn draw_triangle(&mut self, triangle: &Shape) -> Vec<u32>{
         let mut vertex_1: Vec2 = Vec2::new(0, 0);
         let mut vertex_2: Vec2 = Vec2::new(0, 0);
         let mut vertex_3: Vec2 = Vec2::new(0, 0);
@@ -92,66 +103,68 @@ impl Canvas {
         let mut triangle_color: Color = Color{r: 255, g:0, b:220}; 
 
         if let Shape::TriangleByPoints { point_1, point_2, point_3, color } = triangle {
-            vertex_1 = point_1;
-            vertex_2 = point_2;
-            vertex_3 = point_3;
-            triangle_color = color;
+            vertex_1 = *point_1;
+            vertex_2 = *point_2;
+            vertex_3 = *point_3;
+            triangle_color = *color;
         }
         else if let Shape::TriangleByPosition { position, point_1, point_2, point_3, color } = triangle  {
-            vertex_1 = Vec2::add(position, point_1);
-            vertex_2 = Vec2::add(position, point_2);
-            vertex_3 = Vec2::add(position, point_3);
-            triangle_color = color;
+            vertex_1 = Vec2::add(*position, *point_1);
+            vertex_2 = Vec2::add(*position, *point_2);
+            vertex_3 = Vec2::add(*position, *point_3);
+            triangle_color = *color;
+            
         }
 
         // Find the area of rasterization 
-        //let rtzr_area_max_x:i32 = *(vec![vertex_1.x, vertex_2.x, vertex_3.x]).iter().max().unwrap();
+        let rtzr_area_max_x:i32 = *(vec![vertex_1.x, vertex_2.x, vertex_3.x]).iter().max().unwrap();
         let rtzr_area_min_x:i32 = *(vec![vertex_1.x, vertex_2.x, vertex_3.x]).iter().min().unwrap();
         let rtzr_area_max_y:i32 = *(vec![vertex_1.y, vertex_2.y, vertex_3.y]).iter().max().unwrap();
-        //let rtzr_area_min_y:i32 = *(vec![vertex_1.y, vertex_2.y, vertex_3.y]).iter().max().unwrap();
+        let rtzr_area_min_y:i32 = *(vec![vertex_1.y, vertex_2.y, vertex_3.y]).iter().min().unwrap();
         // The 2 points of the rectangle around the triangle
         let rtzr_point_top_left: Vec2 = Vec2::new(rtzr_area_min_x, rtzr_area_max_y);   
-        //let rtzr_point_bottom_right: Vec2 = Vec2::new(rtzr_area_max_x, rtzr_area_min_y);   
+        let rtzr_point_bottom_right: Vec2 = Vec2::new(rtzr_area_max_x, rtzr_area_min_y);   
         //Check every pixel in the rectangle
-        for i in 0..(self.width*self.height) as usize{
-            let mut cursor: Vec2 = rtzr_point_top_left;
-            // The 3 vector of the triangle
-            let segment_ab: f32 = Vec2::length(Vec2::sub(vertex_1,vertex_2));
-            let segment_bc: f32 = Vec2::length(Vec2::sub(vertex_2,vertex_3));
-            let segment_ca: f32 = Vec2::length(Vec2::sub(vertex_3,vertex_1));
-            // The 3 vector between the current point and the 3 vertex
-            let segment_h: f32 = Vec2::length(Vec2::sub(cursor,vertex_1));
-            let segment_i: f32 = Vec2::length(Vec2::sub(cursor,vertex_2));
-            let segment_g: f32 = Vec2::length(Vec2::sub(cursor,vertex_3));
-            // Get the 3 angle of the triangle relative to the cursor position, if > 180, the cursor is outside the triangle
-            let angle_a:f32 = ((segment_h.powf(2.0)+segment_ab.powf(2.0)-segment_i.powf(2.0))/(2.0*segment_h*segment_ab)).acos() + 
-            ((segment_ca.powf(2.0)+segment_h.powf(2.0)-segment_g.powf(2.0))/(2.0*segment_ca*segment_h));
-
-            let angle_b:f32 = ((segment_i.powf(2.0)+segment_ab.powf(2.0)-segment_h.powf(2.0))/(2.0*segment_i*segment_ab)).acos() + 
-            ((segment_bc.powf(2.0)+segment_i.powf(2.0)-segment_g.powf(2.0))/(2.0*segment_bc*segment_i));
-
-            let angle_c:f32 = ((segment_g.powf(2.0)+segment_bc.powf(2.0)-segment_i.powf(2.0))/(2.0*segment_g*segment_bc)).acos() + 
-            ((segment_ca.powf(2.0)+segment_g.powf(2.0)-segment_h.powf(2.0))/(2.0*segment_ca*segment_g));
-
-            let sum_angles: f32 = angle_a + angle_b + angle_c;
-
-            if sum_angles.floor() <= 180.0 {
-                self.buffer[i] = Color::encode_color(triangle_color);
+        let mut cursor: Vec2 = rtzr_point_top_left;
+        for i in 0..((rtzr_area_max_x-rtzr_area_min_x)*(rtzr_area_max_y-rtzr_area_min_y)) as usize{
+            
+            if Self::is_in_triangle(vertex_1, vertex_2, vertex_3, cursor) {
+                self.buffer[(cursor.y as usize*(self.width as usize))+cursor.x as usize] = triangle_color.to_u32();
             }
 
             cursor.x += 1;
-            if cursor.x == self.width as i32 {
+            if cursor.x == rtzr_area_max_x{
                 cursor.x = rtzr_point_top_left.x;
-                cursor.y += 1;
+                cursor.y -= 1;
             }
 
         }
 
-
-
-
         let a: Vec<u32> = vec![0,5];
         a
+    }
+
+    pub fn as_buffer(&mut self) -> &Vec<u32> {
+
+        for shape in &self.shapes_list.clone() {
+            match shape {
+                Shape::TriangleByPoints { point_1, point_2, point_3, color } => {
+                    Self::draw_triangle(self, &shape);
+                },
+                Shape::TriangleByPosition { position, point_1, point_2, point_3, color } => {
+                    Self::draw_triangle(self, &shape);
+                },
+                Shape::Circle { position, color } => {
+                },
+                Shape::Rectangle { position, width, height, color } => {
+                    
+                }
+
+            }
+
+        }
+
+        &self.buffer
     }
 
 }
