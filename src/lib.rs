@@ -106,7 +106,6 @@ impl Canvas {
         //Check for every pixel if it is in the triangle. If yes, color it in the color specified
         for y in rtzr_area_min_y..rtzr_area_max_y{
             for x in rtzr_area_min_x..rtzr_area_max_x{
-
                 let cursor: Vec2 = Vec2::new(x, y);
                 if Self::is_in_triangle(vertex_1, vertex_2, vertex_3, cursor) {
                 self.frame_buffer[(cursor.y as usize*(self.width as usize))+cursor.x as usize] = color.to_u32();
@@ -122,14 +121,30 @@ impl Canvas {
         let rtzr_area_max_y:i32 = position.y + rayon as i32;
         let rtzr_area_min_y:i32 = position.y - rayon as i32;
 
-        //Check for every pixel if it is in the triangle. If yes, color it in the color specified
+        //Check for every pixel if it is in the circle. If yes, color it in the color specified
         for y in rtzr_area_min_y..rtzr_area_max_y{
             for x in rtzr_area_min_x..rtzr_area_max_x{
-
                 let cursor: Vec2 = Vec2::new(x, y);
                 if Vec2::sub(cursor, position).length() <= rayon as f32{
                     self.frame_buffer[(cursor.y as usize*(self.width as usize))+cursor.x as usize] = color.to_u32();
                 }
+            }
+        }
+    }
+
+    pub fn draw_rectangle(&mut self, position: Vec2, _width: u32, height: u32, color: Color){
+        // Find the area of rasterization 
+        let rtzr_area_max_x:i32 = position.x + (_width/2) as i32;
+        let rtzr_area_min_x:i32 = position.x - (_width/2) as i32;
+        let rtzr_area_max_y:i32 = position.y + (height/2) as i32;
+        let rtzr_area_min_y:i32 = position.y - (height/2) as i32;
+
+        let mut cursor: Vec2 = Vec2::new(0, 0);
+        //Color all the area
+        for y in rtzr_area_min_y..rtzr_area_max_y{
+            for x in rtzr_area_min_x..rtzr_area_max_x{
+                cursor.x = x; cursor.y = y;
+                self.frame_buffer[(cursor.y as usize*(self.width as usize))+cursor.x as usize] = color.to_u32();
             }
         }
     }
