@@ -1,3 +1,5 @@
+use std::slice::SliceIndex;
+
 pub use minifb::*;
 
 // Define a vector2 structure
@@ -59,14 +61,202 @@ impl Color {
 // Define a Shape Enum
 #[derive(Clone)]
 pub enum Shape{
-    TriangleByPoints {point_1: Vec2, point_2: Vec2, point_3: Vec2, color:Color},
-    TriangleByPosition {position: Vec2, point_1: Vec2, point_2: Vec2, point_3: Vec2, color:Color},
-    Circle {position: Vec2, color:Color},
+    Triangle {position: Vec2, vertex_1: Vec2, vertex_2: Vec2, vertex_3: Vec2, color:Color}, // Take a position and 3 vertex relative to the position.
+    Circle {position: Vec2,radius: u32, color:Color},
     Rectangle {position: Vec2, width: u32, height: u32, color:Color}
 
 }
 
+impl Shape{
+    
+    pub fn chg_position(&mut self, _position: Vec2){
+        match self {
+            Self::Triangle { position, ..} 
+            | Self::Circle { position, ..}
+            | Self::Rectangle { position, ..}  => *position = _position
+        }
+    }
+
+    pub fn chg_color(&mut self, _color: Color){
+        match self {
+            Self::Triangle { color, ..} 
+            | Self::Circle { color, ..} 
+            | Self::Rectangle { color, ..}  => *color = _color
+        }
+    }
+
+    pub fn chg_vertex(&mut self, vertex_id:u8, vertex: Vec2){
+        match self {
+            Self::Triangle {vertex_1, vertex_2, vertex_3,..} => {
+                match vertex_id {
+                    1 => {*vertex_1 = vertex}
+                    2 => {*vertex_2 = vertex}
+                    3 => {*vertex_3 = vertex}
+                    _ => {panic!(
+                        "ERROR: Invalide vertex id \nfile : {}\nline : {}",
+                        file!(),
+                        line!()
+                    )}
+                    
+                }
+            },
+            Self::Circle {..} => panic!(
+                "ERROR: You cannot change the vertices of a Circle\nFile : {}\nLine : {}",
+                file!(),
+                line!(),
+            ),
+            Self::Rectangle { ..}  => panic!(
+                "ERROR: You cannot change the vertices of a Rectangle\nFile : {}\nLine : {}",
+                file!(),
+                line!(),
+            )
+        }
+    }
+
+    pub fn chg_radius(&mut self, _radius: u32){
+        match self {
+            Self::Circle {radius,..} => *radius = _radius,
+            Self::Triangle {..} => panic!(
+                "ERROR: You cannot change the radius of a Triangle\nFile : {}\nLine : {}",
+                file!(),
+                line!(),
+            ),
+            Self::Rectangle {..}  => panic!(
+                "ERROR: You cannot change the radius of a Rectangle\nFile : {}\nLine : {}",
+                file!(),
+                line!(),
+            )
+        }
+    }
+
+    pub fn change_dimensions(&mut self, _width: u32, _height: u32){
+        match self {
+                        Self::Rectangle { width, height, .. } => {
+                *width = _width;
+                *height = _height;
+            },
+            Self::Triangle {..} => panic!(
+                "ERROR: You cannot change the dimensions of a Triangle\nFile : {}\nLine : {}",
+                file!(),
+                line!(),
+            ),
+            Self::Circle {..} => panic!(
+                "ERROR: You cannot change the dimensions of a Circle \nFile : {}\nLine : {}",
+                file!(),
+                line!(),
+            )
+        }
+    }
+
+    pub fn position(&mut self) -> Vec2 {
+        let mut _position: Vec2;
+        match self {
+            Self::Triangle { position, .. }   
+            | Self::Circle { position, .. } 
+            | Self::Rectangle { position, .. } => _position = *position
+        }
+        _position
+    }
+
+    pub fn color(&mut self) -> Color{
+        let mut _color;
+        match self {
+            Self::Triangle {color, ..}
+            | Self::Circle {color, ..}
+            | Self::Rectangle {color, ..} => _color = *color 
+            
+        }
+        _color
+    }
+
+    pub fn vertex(&mut self, vertex_id: u8) -> Vec2{
+        let mut _vertex: Vec2;
+        match self {
+            Self::Triangle {vertex_1, vertex_2, vertex_3, ..} => {
+                match vertex_id {
+                    1 => {_vertex = *vertex_1}
+                    2 => {_vertex = *vertex_2}
+                    3 => {_vertex = *vertex_3}
+                    _ => {panic!(
+                    "ERROR: Invalide vertex id \nFile : {}\nLine : {}",
+                    file!(),
+                    line!(),
+                    )}
+                }
+            },
+            Self::Circle {..} => {panic!(
+                "ERROR: Circle don't have vertices \nFile : {}\nLine : {}",
+                file!(),
+                line!(),
+            )},
+            Self::Rectangle {..} => {panic!(
+                "ERROR: Rectangle don't have vertices \nFile : {}\nLine : {}",
+                file!(),
+                line!(),
+            )}
+        }
+        _vertex
+    }
+ 
+    pub fn radius(&mut self) -> u32 {
+        let mut _radius: u32;
+        match self {
+            Self::Circle { radius, ..} => _radius = *radius,
+            Self::Triangle {..} => {panic!(
+                "ERROR: Triangle don't have radius \nFile : {}\nLine : {}",
+                file!(),
+                line!(),
+            )}
+            Self::Rectangle {..} => {panic!(
+                "ERROR: Rectangle don't have radius \nFile : {}\nLine : {}",
+                file!(),
+                line!(),
+            )}
+        }
+        _radius
+    }
+
+    pub fn width(&mut self) -> u32{
+        let mut _widht: u32;
+        match self {
+            Self::Rectangle {width, ..} => _widht = *width,
+            Self::Circle {..} => {panic!(
+                "ERROR: Circle don't have width \nFile : {}\nLine : {}",
+                file!(),
+                line!(),
+            )}
+            Self::Triangle {..} => {panic!(
+                "ERROR: Triangle don't have width \nFile : {}\nLine : {}",
+                file!(),
+                line!(),
+            )}
+        }
+        _widht
+    }
+
+    pub fn height(&mut self) -> u32{
+        let mut _height: u32;
+        match self {
+            Self::Rectangle {height, ..} => _height = *height,
+            Self::Circle {..} => {panic!(
+                "ERROR: Circle don't have height \nFile : {}\nLine : {}",
+                file!(),
+                line!(),
+            )}
+            Self::Triangle {..} => {panic!(
+                "ERROR: Triangle don't have height \nFile : {}\nLine : {}",
+                file!(),
+                line!(),
+            )}
+        }
+        _height
+    }
+
+
+}
+
 // Define a Canvas structure 
+#[derive(Clone)]
 pub struct Canvas {
     width: u32,
     height: u32,
@@ -114,18 +304,18 @@ impl Canvas {
         }
     }
 
-    pub fn draw_circle(&mut self, position: Vec2, rayon: u32, color: Color){
+    pub fn draw_circle(&mut self, position: Vec2, radius: u32, color: Color){
         // Find the area of rasterization 
-        let rtzr_area_max_x:i32 = position.x + rayon as i32;
-        let rtzr_area_min_x:i32 = position.x - rayon as i32;
-        let rtzr_area_max_y:i32 = position.y + rayon as i32;
-        let rtzr_area_min_y:i32 = position.y - rayon as i32;
+        let rtzr_area_max_x:i32 = position.x + radius as i32;
+        let rtzr_area_min_x:i32 = position.x - radius as i32;
+        let rtzr_area_max_y:i32 = position.y + radius as i32;
+        let rtzr_area_min_y:i32 = position.y - radius as i32;
 
         //Check for every pixel if it is in the circle. If yes, color it in the color specified
         for y in rtzr_area_min_y..rtzr_area_max_y{
             for x in rtzr_area_min_x..rtzr_area_max_x{
                 let cursor: Vec2 = Vec2::new(x, y);
-                if Vec2::sub(cursor, position).length() <= rayon as f32{
+                if Vec2::sub(cursor, position).length() <= radius as f32{
                     self.frame_buffer[(cursor.y as usize*(self.width as usize))+cursor.x as usize] = color.to_u32();
                 }
             }
@@ -148,7 +338,6 @@ impl Canvas {
             }
         }
     }
-
     //Clear the frame buffer of the canvas
     pub fn clear_frame_buffer(&mut self){
         self.frame_buffer = vec![self.background_color.to_u32(), self.width*self.height]
@@ -156,6 +345,20 @@ impl Canvas {
     //Gives the frame buffer of the canvas
     pub fn as_buffer(&mut self) -> &Vec<u32> {
         &self.frame_buffer
+    }
+
+    pub fn draw_shapes(&mut self){
+        for shape in self.shapes_list {
+            match shape {
+                Shape::Circle { position, radius, color } => {self.draw_circle(position, radius, color);},
+                Shape::Rectangle { position, width, height, color } => {self.draw_rectangle(position, width, height, color);},
+                Shape::Triangle { position, vertex_1, vertex_2, vertex_3, color } => {self.draw_triangle( 
+                    Vec2::add(position, vertex_1), 
+                    Vec2::add(position, vertex_2),
+                    Vec2::add(position, vertex_3),
+                    color);}
+            }
+        }
     }
 
 }
