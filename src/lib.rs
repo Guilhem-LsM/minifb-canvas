@@ -15,13 +15,21 @@ impl Vec2 {
     }
     
     // Give the sum of two vector2
-    pub fn add(vec1: Vec2, vec2: Vec2) -> Self{
-        Vec2 { x: (vec1.x + vec2.x), y: (vec1.y + vec2.y) }
+    pub fn add(vec_1: Vec2, vec_2: Vec2) -> Self{
+        Vec2 { x: (vec_1.x + vec_2.x), y: (vec_1.y + vec_2.y) }
     }
 
     // Give the substraction of two vector2
-    pub fn sub(vec1: Vec2, vec2: Vec2) -> Self{
-        Vec2 { x: (vec1.x - vec2.x), y: (vec1.y - vec2.y) }
+    pub fn sub(vec_1: Vec2, vec_2: Vec2) -> Self{
+        Vec2 { x: (vec_1.x - vec_2.x), y: (vec_1.y - vec_2.y) }
+    }
+
+    pub fn div(vec_1: Vec2, nb:i32) -> Self{
+        Vec2 { x: (vec_1.x/nb), y: (vec_1.y/nb) }
+    }
+
+    pub fn mul(vec_1: Vec2, nb:i32) -> Self{
+        Vec2 { x: (vec_1.x*nb), y: (vec_1.y*nb) }
     }
 
     // Give the length of 
@@ -259,7 +267,6 @@ pub struct Canvas {
     pub width: u32,
     pub height: u32,
     pub background_color: Color,
-    pub shapes_list: Vec<Shape>,
     pub frame_buffer: Vec<u32>
 
 }
@@ -267,7 +274,7 @@ pub struct Canvas {
 impl Canvas {
     pub fn new(width: u32, height: u32, background_color: Color) -> Self{
         let frame_buffer: Vec<u32> = vec![background_color.to_u32(); (width*height) as usize];
-        Canvas { width, height, background_color, shapes_list: Vec::<Shape>::new(), frame_buffer}
+        Canvas { width, height, background_color, frame_buffer}
 
     }
 
@@ -346,8 +353,8 @@ impl Canvas {
         &self.frame_buffer
     }
 
-    pub fn draw_shapes(&mut self){
-        for shape in & self.shapes_list {
+    pub fn draw_shapes(&mut self, shapes_list: &Vec<Shape>){
+        for shape in  shapes_list {
             match shape {
                 Shape::Circle { position, radius, color } => {
                     // Find the area of rasterization 
@@ -392,36 +399,41 @@ impl Canvas {
                     let rtzr_area_min_x:i32 = *(vec![_vertex_1.x, _vertex_2.x, _vertex_3.x]).iter().min().unwrap();
                     let rtzr_area_max_y:i32 = *(vec![_vertex_1.y, _vertex_2.y, _vertex_3.y]).iter().max().unwrap();
                     let rtzr_area_min_y:i32 = *(vec![_vertex_1.y, _vertex_2.y, _vertex_3.y]).iter().min().unwrap();
-                    println!("{}", rtzr_area_max_x);
-                    println!("{}", rtzr_area_min_x);
-                    println!("{}", rtzr_area_max_y);
-                    println!("{}", rtzr_area_min_y);
-                    println!("");
                     let mut cursor: Vec2;
+                    
+                    let x_from:i32;
+                    let x_to:i32;
+
+                    if (vertex_1.x + vertex_2.x + vertex_3.x)/3 < rtzr_area_max_x - (rtzr_area_max_x-rtzr_area_max_y)/2 {
+                        x_from = rtzr_area_min_x;
+                        x_to = rtzr_area_max_x;
+                    }
+                    else {
+                        x_from = rtzr_area_max_x;
+                        x_to = rtzr_area_min_x;
+                    }
                     //Check for every pixel if it is in the triangle. If yes, color it in the color specified
                     for y in rtzr_area_min_y..rtzr_area_max_y{
-                        for x in rtzr_area_min_x..rtzr_area_max_x{
-                            cursor = Vec2::new(x, y);
-                            //print!("{}, {}; {}, {}; {}, {}; {}, {} ", _vertex_1.x, _vertex_1.y, _vertex_2.x, _vertex_2.y, _vertex_3.x, _vertex_3.y, cursor.x, cursor.y);
-                            if Self::is_in_triangle(
-                                _vertex_1, 
-                                _vertex_2, 
-                                _vertex_3, 
-                                cursor) {
-                                self.frame_buffer[(cursor.y as usize*(self.width as usize))+cursor.x as usize] = color.to_u32();
+                        let mut on_write:bool = false;
+                        for x in x_from..x_to{
+                            if y >= 0 && y <= (self.height as i32)-1 && x >= 0 && x <= (self.width as i32)-1 {
+                                cursor = Vec2::new(x, y);
+                                if Self::is_in_triangle(
+                                    _vertex_1, 
+                                    _vertex_2, 
+                                    _vertex_3, 
+                                    cursor) {
+                                    self.frame_buffer[(cursor.y as usize*(self.width as usize))+cursor.x as usize] = color.to_u32();
+                                    on_write = true;
+                                }
+                                else if on_write == true {
+                                    break;
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
-
-    pub fn push_shape(&mut self,shape: Shape){
-        self.shapes_list.push(shape);
-    }
-
-    pub fn clone_shape(&mut self, shape: &Shape){
-        self.shapes_list.push(shape.clone());
     }
 }
