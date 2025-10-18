@@ -401,34 +401,118 @@ impl Canvas {
                     let rtzr_area_min_y:i32 = *(vec![_vertex_1.y, _vertex_2.y, _vertex_3.y]).iter().min().unwrap();
                     let mut cursor: Vec2;
                     
-                    let x_from:i32;
-                    let x_to:i32;
+                    let mut upper_vertex:Vec2 = Vec2 { x: 0, y: 0};
+                    let mut middle_vertex:Vec2 = Vec2 { x: 0, y: 0};
+                    let mut minor_vertex:Vec2 = Vec2 { x: 0, y: 0};
+                    
+                    let mut two_edge:bool = false;
+                    
+                    if vertex_1.y == vertex_2.y || vertex_1.y == vertex_3.y || vertex_2.y == vertex_3.y {
+						
+					}
+					else {
+						if rtzr_area_min_y == vertex_1.y{
+							minor_vertex = *vertex_1;
+						}
+						else if rtzr_area_min_y == vertex_2.y{
+							minor_vertex = *vertex_2;
+						}
+						else if rtzr_area_min_y == vertex_3.y{
+							minor_vertex = *vertex_3;
+						}
+						
+						if vertex_1.y != rtzr_area_min_y && vertex_1.y != rtzr_area_max_y {
+							middle_vertex = *vertex_1;
+						}
+						else if vertex_2.y != rtzr_area_min_y && vertex_2.y != rtzr_area_max_y {
+							middle_vertex = *vertex_2;
+						}
+						else if vertex_3.y != rtzr_area_min_y && vertex_3.y != rtzr_area_max_y {
+							middle_vertex = *vertex_3;
+						}
+						
+						if rtzr_area_max_y == vertex_1.y{
+							upper_vertex = *vertex_1;
+						}
+						else if rtzr_area_max_y == vertex_2.y{
+							upper_vertex = *vertex_2;
+						}
+						else if rtzr_area_max_y == vertex_3.y{
+							upper_vertex = *vertex_3;
+						}
+						
+						if middle_vertex.x >= upper_vertex.x && middle_vertex.x >= minor_vertex.x {
+							two_edge = false;
+						}
+						else {
+							two_edge = true;
+						}
+					}
+                    
+                    
+						
+						
+					
 
-                    if (vertex_1.x + vertex_2.x + vertex_3.x)/3 < rtzr_area_max_x - (rtzr_area_max_x-rtzr_area_max_y)/2 {
-                        x_from = rtzr_area_min_x;
-                        x_to = rtzr_area_max_x;
-                    }
-                    else {
-                        x_from = rtzr_area_max_x;
-                        x_to = rtzr_area_min_x;
-                    }
+
                     //Check for every pixel if it is in the triangle. If yes, color it in the color specified
                     for y in rtzr_area_min_y..rtzr_area_max_y{
-                        let mut on_write:bool = false;
-                        for x in x_from..x_to{
+						
+						let mut a1:i32 = 1;
+                        let mut b1:i32 = 1;
+                        let mut a2:i32 = 1;
+                        let mut b2:i32 = 1;
+                        let mut a3:i32 = 1;
+                        let mut b3:i32 = 1;
+                                
+                        let mut x_start:i32 = 0;
+                        let mut x_end:i32 = 0;
+                                
+                        if two_edge {
+									
+						}
+						else{
+									
+							a1 = (upper_vertex.y - minor_vertex.y)/(upper_vertex.x - minor_vertex.x);
+							b1 = minor_vertex.y - (a1 * minor_vertex.x);
+							a2 = (middle_vertex.y - minor_vertex.y)/(middle_vertex.x - minor_vertex.x);
+							b2 = minor_vertex.y - (a2 * minor_vertex.x);
+							a3 = (upper_vertex.y - middle_vertex.y)/(upper_vertex.x-middle_vertex.y);
+							b3 = upper_vertex.y - (a3 * upper_vertex.x);
+									
+							x_start = (y-b1)/a1;
+							if y < middle_vertex.y {
+								x_end = (y-b2)/a2;
+							}
+							else {
+								x_end = (y-b3)/a3;
+							}
+									
+						}
+						println!("{},{}",x_start,x_end);
+						
+                        for x in x_start..x_end{
                             if y >= 0 && y <= (self.height as i32)-1 && x >= 0 && x <= (self.width as i32)-1 {
-                                cursor = Vec2::new(x, y);
-                                if Self::is_in_triangle(
-                                    _vertex_1, 
-                                    _vertex_2, 
-                                    _vertex_3, 
-                                    cursor) {
-                                    self.frame_buffer[(cursor.y as usize*(self.width as usize))+cursor.x as usize] = color.to_u32();
-                                    on_write = true;
-                                }
-                                else if on_write == true {
-                                    break;
-                                }
+								cursor = Vec2::new(x, y);
+                                
+                                self.frame_buffer[(cursor.y as usize*(self.width as usize))+cursor.x as usize] = color.to_u32();
+								
+								
+								
+								
+								// y =  ax + b
+								// y - b = ax
+								// x = (y-b)/a
+								
+								// b = y - ax
+                                
+                                //if Self::is_in_triangle(
+                                //    _vertex_1, 
+                                //    _vertex_2, 
+                                //    _vertex_3, 
+                                //    cursor) {
+                                //    self.frame_buffer[(cursor.y as usize*(self.width as usize))+cursor.x as usize] = color.to_u32();
+                                //}
                             }
                         }
                     }
