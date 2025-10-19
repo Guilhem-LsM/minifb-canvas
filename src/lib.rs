@@ -14,6 +14,7 @@ impl Vec2 {
         Vec2 { x, y }
     }
     
+    
     // Give the sum of two vector2
     pub fn add(vec_1: Vec2, vec_2: Vec2) -> Self{
         Vec2 { x: (vec_1.x + vec_2.x), y: (vec_1.y + vec_2.y) }
@@ -406,39 +407,79 @@ impl Canvas {
                     let mut minor_vertex:Vec2 = Vec2 { x: 0, y: 0};
                     
                     let mut two_edge:bool = false;
+                    let mut perpendicular:bool = false;
                     
                     if vertex_1.y == vertex_2.y || vertex_1.y == vertex_3.y || vertex_2.y == vertex_3.y {
-						
+                        
+                        let mut vertex_same_y_1:Vec2 = Vec2::new(0, 0);
+                        let mut vertex_same_y_2:Vec2 = Vec2::new(0, 0);
+                        let mut vertex_other_y:Vec2 = Vec2::new(0, 0);
+
+                        perpendicular = true;
+
+                        if _vertex_1.y == _vertex_2.y {
+                            println!("aa");
+                            vertex_same_y_1 = _vertex_1;
+                            vertex_same_y_2 = _vertex_2;
+                            vertex_other_y = _vertex_3;
+                        }
+                        if _vertex_2.y == _vertex_3.y {
+                            println!("aa");
+                            vertex_same_y_1 = _vertex_2;
+                            vertex_same_y_2 = _vertex_3;
+                            vertex_other_y = _vertex_1;
+                        }
+                        if _vertex_3.y == _vertex_1.y {
+                            println!("aa");
+                            vertex_same_y_1 = _vertex_3;
+                            vertex_same_y_2 = _vertex_1;
+                            vertex_other_y = _vertex_2;
+                        }
+
+                        middle_vertex = vertex_same_y_2;
+                        if vertex_same_y_1.y == rtzr_area_max_y {
+                            println!("b");
+                            upper_vertex = vertex_same_y_1;
+                            minor_vertex = vertex_other_y;
+                        }
+                        else {
+                            println!("bb");
+                            minor_vertex = vertex_same_y_1;
+                            upper_vertex = vertex_other_y;
+                        }
+
+                        println!("active");
+
 					}
 					else {
-						if rtzr_area_min_y == vertex_1.y{
-							minor_vertex = *vertex_1;
+						if rtzr_area_min_y == _vertex_1.y{
+							minor_vertex = _vertex_1;
 						}
-						else if rtzr_area_min_y == vertex_2.y{
-							minor_vertex = *vertex_2;
+						else if rtzr_area_min_y == _vertex_2.y{
+							minor_vertex = _vertex_2;
 						}
-						else if rtzr_area_min_y == vertex_3.y{
-							minor_vertex = *vertex_3;
-						}
-						
-						if vertex_1.y != rtzr_area_min_y && vertex_1.y != rtzr_area_max_y {
-							middle_vertex = *vertex_1;
-						}
-						else if vertex_2.y != rtzr_area_min_y && vertex_2.y != rtzr_area_max_y {
-							middle_vertex = *vertex_2;
-						}
-						else if vertex_3.y != rtzr_area_min_y && vertex_3.y != rtzr_area_max_y {
-							middle_vertex = *vertex_3;
+						else if rtzr_area_min_y == _vertex_3.y{
+							minor_vertex = _vertex_3;
 						}
 						
-						if rtzr_area_max_y == vertex_1.y{
-							upper_vertex = *vertex_1;
+						if _vertex_1.y != rtzr_area_min_y && _vertex_1.y != rtzr_area_max_y {
+							middle_vertex = _vertex_1;
 						}
-						else if rtzr_area_max_y == vertex_2.y{
-							upper_vertex = *vertex_2;
+						else if _vertex_2.y != rtzr_area_min_y && _vertex_2.y != rtzr_area_max_y {
+							middle_vertex = _vertex_2;
 						}
-						else if rtzr_area_max_y == vertex_3.y{
-							upper_vertex = *vertex_3;
+						else if _vertex_3.y != rtzr_area_min_y && _vertex_3.y != rtzr_area_max_y {
+							middle_vertex = _vertex_3;
+						}
+						
+						if rtzr_area_max_y == _vertex_1.y{
+							upper_vertex = _vertex_1;
+						}
+						else if rtzr_area_max_y == _vertex_2.y{
+							upper_vertex = _vertex_2;
+						}
+						else if rtzr_area_max_y == _vertex_3.y{
+							upper_vertex = _vertex_3;
 						}
 						
 						if middle_vertex.x >= upper_vertex.x && middle_vertex.x >= minor_vertex.x {
@@ -449,54 +490,70 @@ impl Canvas {
 						}
 					}
                     
+                    println!("Minor : {},{}",minor_vertex.x,minor_vertex.y);
+                    println!("Middle : {},{}",middle_vertex.x,middle_vertex.y);
+                    println!("Upper : {},{}",upper_vertex.x,upper_vertex.y);
                     
-						
-						
-					
-
-
                     //Check for every pixel if it is in the triangle. If yes, color it in the color specified
                     for y in rtzr_area_min_y..rtzr_area_max_y{
 						
-						let mut a1:i32 = 1;
-                        let mut b1:i32 = 1;
-                        let mut a2:i32 = 1;
-                        let mut b2:i32 = 1;
-                        let mut a3:i32 = 1;
-                        let mut b3:i32 = 1;
+						let mut a1:f32 = 1.0;
+                        let mut b1:f32 = 1.0;
+                        let mut a2:f32 = 1.0;
+                        let mut b2:f32 = 1.0;
+                        let mut a3:f32 = 1.0;
+                        let mut b3:f32 = 1.0;
                                 
                         let mut x_start:i32 = 0;
                         let mut x_end:i32 = 0;
                                 
+                        a1 = (upper_vertex.y as f32 - minor_vertex.y as f32)/(upper_vertex.x as f32 - minor_vertex.x as f32);
+						b1 = minor_vertex.y as f32 - (a1 * minor_vertex.x as f32);
+						a2 = (middle_vertex.y as f32 - minor_vertex.y as f32)/(middle_vertex.x as f32 - minor_vertex.x as f32);
+						b2 = minor_vertex.y as f32 - (a2 * minor_vertex.x as f32);
+						a3 = (upper_vertex.y as f32 - middle_vertex.y as f32)/(upper_vertex.x as f32 - middle_vertex.x as f32);
+						b3 = upper_vertex.y as f32 - (a3 * upper_vertex.x as f32);
+
+                        if two_edge && perpendicular  {
+                            a1 = 1.0;
+                            b1 = y as f32 - minor_vertex.x as f32;
+                        }
+                        else if perpendicular {
+                            a2 = 1.0;
+                            b2 = y as f32 - middle_vertex.x as f32;
+
+                            a3 = 1.0;
+                            b3 = y as f32 - upper_vertex.x as f32;
+                        }
+
+                        println!("b1 : {}", b1);
+                        println!("ész : {}, {}", minor_vertex.x, rtzr_area_min_x);
                         if two_edge {
-									
-						}
-						else{
-									
-							a1 = (upper_vertex.y - minor_vertex.y)/(upper_vertex.x - minor_vertex.x);
-							b1 = minor_vertex.y - (a1 * minor_vertex.x);
-							a2 = (middle_vertex.y - minor_vertex.y)/(middle_vertex.x - minor_vertex.x);
-							b2 = minor_vertex.y - (a2 * minor_vertex.x);
-							a3 = (upper_vertex.y - middle_vertex.y)/(upper_vertex.x-middle_vertex.y);
-							b3 = upper_vertex.y - (a3 * upper_vertex.x);
-									
-							x_start = (y-b1)/a1;
-							if y < middle_vertex.y {
-								x_end = (y-b2)/a2;
+                            println!("Two Edge");
+                            x_end = ((y as f32-b1)/a1) as i32;
+                            if y < middle_vertex.y {
+								x_start = ((y as f32-b2)/a2) as i32;
 							}
 							else {
-								x_end = (y-b3)/a3;
+								x_start = ((y as f32-b3)/a3) as i32;
 							}
-									
 						}
-						println!("{},{}",x_start,x_end);
-						
+						else{
+                            println!("One Edge");
+							x_start = ((y as f32 - b1)/a1) as i32;
+                            println!("x_start :{}", x_start);
+							if y < middle_vertex.y {
+								x_end = ((y as f32-b2)/a2) as i32;
+							}
+							else {
+								x_end = ((y as f32-b3)/a3) as i32;
+							}		
+                            println!("x_end :{}", x_end);
+						}		
                         for x in x_start..x_end{
                             if y >= 0 && y <= (self.height as i32)-1 && x >= 0 && x <= (self.width as i32)-1 {
-								cursor = Vec2::new(x, y);
                                 
-                                self.frame_buffer[(cursor.y as usize*(self.width as usize))+cursor.x as usize] = color.to_u32();
-								
+                                self.frame_buffer[(y as usize*(self.width as usize))+x as usize] = color.to_u32();
 								
 								
 								
