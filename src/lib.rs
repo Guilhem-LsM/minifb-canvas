@@ -364,12 +364,8 @@ impl Canvas {
         &self.frame_buffer
     }
 
-    pub fn enable_free_zone_optimization(&mut self){
-        self.free_zone_optimization = true;
-    }
-
-    pub fn disable_free_zone_optimization(&mut self){
-        self.free_zone_optimization = false;
+    pub fn set_free_zone_optimization(&mut self, mode:bool){
+        self.free_zone_optimization = mode;
     }
 
     pub fn draw_shapes(&mut self, shapes_list: &Vec<Shape>){
