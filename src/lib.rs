@@ -268,14 +268,17 @@ pub struct Canvas {
     pub width: u32,
     pub height: u32,
     pub background_color: Color,
-    pub frame_buffer: Vec<u32>
+    pub frame_buffer: Vec<u32>,
+    pub frame_free_zone_buffer: Vec<Vec2>,
+    pub free_zone_optimization:bool
 
 }
 
 impl Canvas {
     pub fn new(width: u32, height: u32, background_color: Color) -> Self{
         let frame_buffer: Vec<u32> = vec![background_color.to_u32(); (width*height) as usize];
-        Canvas { width, height, background_color, frame_buffer}
+        let frame_free_zone_buffer: Vec<Vec2> = vec![Vec2::new(background_color.to_u32() as i32, -1); (width*height) as usize];
+        Canvas { width, height, background_color, frame_buffer, frame_free_zone_buffer, free_zone_optimization: false}
 
     }
 
@@ -351,7 +354,22 @@ impl Canvas {
     }
     //Gives the frame buffer of the canvas
     pub fn as_buffer(&mut self) -> &Vec<u32> {
+
+        if self.free_zone_optimization{
+            for (index, vector2) in self.frame_free_zone_buffer.iter().enumerate() {
+                self.frame_buffer[index] = vector2.x as u32;
+            }
+        }
+
         &self.frame_buffer
+    }
+
+    pub fn enable_free_zone_optimization(&mut self){
+        self.free_zone_optimization = true;
+    }
+
+    pub fn disable_free_zone_optimization(&mut self){
+        self.free_zone_optimization = false;
     }
 
     pub fn draw_shapes(&mut self, shapes_list: &Vec<Shape>){
@@ -418,19 +436,16 @@ impl Canvas {
                         perpendicular = true;
 
                         if _vertex_1.y == _vertex_2.y {
-                            println!("aa");
                             vertex_same_y_1 = _vertex_1;
                             vertex_same_y_2 = _vertex_2;
                             vertex_other_y = _vertex_3;
                         }
                         if _vertex_2.y == _vertex_3.y {
-                            println!("aa");
                             vertex_same_y_1 = _vertex_2;
                             vertex_same_y_2 = _vertex_3;
                             vertex_other_y = _vertex_1;
                         }
                         if _vertex_3.y == _vertex_1.y {
-                            println!("aa");
                             vertex_same_y_1 = _vertex_3;
                             vertex_same_y_2 = _vertex_1;
                             vertex_other_y = _vertex_2;
@@ -438,17 +453,14 @@ impl Canvas {
 
                         middle_vertex = vertex_same_y_2;
                         if vertex_same_y_1.y == rtzr_area_max_y {
-                            println!("b");
                             upper_vertex = vertex_same_y_1;
                             minor_vertex = vertex_other_y;
                         }
                         else {
-                            println!("bb");
                             minor_vertex = vertex_same_y_1;
                             upper_vertex = vertex_other_y;
                         }
 
-                        println!("active");
 
 					}
 					else {
@@ -490,22 +502,20 @@ impl Canvas {
 						}
 					}
                     
-                    println!("Minor : {},{}",minor_vertex.x,minor_vertex.y);
-                    println!("Middle : {},{}",middle_vertex.x,middle_vertex.y);
-                    println!("Upper : {},{}",upper_vertex.x,upper_vertex.y);
+
                     
                     //Check for every pixel if it is in the triangle. If yes, color it in the color specified
                     for y in rtzr_area_min_y..rtzr_area_max_y{
 						
-						let mut a1:f32 = 1.0;
-                        let mut b1:f32 = 1.0;
-                        let mut a2:f32 = 1.0;
-                        let mut b2:f32 = 1.0;
-                        let mut a3:f32 = 1.0;
-                        let mut b3:f32 = 1.0;
+						let mut a1:f32;
+                        let mut b1:f32;
+                        let mut a2:f32;
+                        let mut b2:f32;
+                        let mut a3:f32;
+                        let mut b3:f32;
                                 
-                        let mut x_start:i32 = 0;
-                        let mut x_end:i32 = 0;
+                        let mut x_start:i32;
+                        let mut x_end:i32;
                                 
                         a1 = (upper_vertex.y as f32 - minor_vertex.y as f32)/(upper_vertex.x as f32 - minor_vertex.x as f32);
 						b1 = minor_vertex.y as f32 - (a1 * minor_vertex.x as f32);
@@ -526,10 +536,9 @@ impl Canvas {
                             b3 = y as f32 - upper_vertex.x as f32;
                         }
 
-                        println!("b1 : {}", b1);
-                        println!("ész : {}, {}", minor_vertex.x, rtzr_area_min_x);
+
                         if two_edge {
-                            println!("Two Edge");
+
                             x_end = ((y as f32-b1)/a1) as i32;
                             if y < middle_vertex.y {
 								x_start = ((y as f32-b2)/a2) as i32;
@@ -539,38 +548,37 @@ impl Canvas {
 							}
 						}
 						else{
-                            println!("One Edge");
+
 							x_start = ((y as f32 - b1)/a1) as i32;
-                            println!("x_start :{}", x_start);
+
 							if y < middle_vertex.y {
 								x_end = ((y as f32-b2)/a2) as i32;
 							}
 							else {
 								x_end = ((y as f32-b3)/a3) as i32;
 							}		
-                            println!("x_end :{}", x_end);
-						}		
-                        for x in x_start..x_end{
+
+						}	
+                        let mut x:i32 = x_start;	
+                        while x < x_end+1{
                             if y >= 0 && y <= (self.height as i32)-1 && x >= 0 && x <= (self.width as i32)-1 {
                                 
-                                self.frame_buffer[(y as usize*(self.width as usize))+x as usize] = color.to_u32();
+                                if self.free_zone_optimization {
+
+                                    if self.frame_free_zone_buffer[(y as usize*(self.width as usize))+x as usize].y == -1 {
+                                        self.frame_free_zone_buffer[(y as usize*(self.width as usize))+x as usize].x = color.to_u32() as i32;
+                                        self.frame_free_zone_buffer[(y as usize*(self.width as usize))+x as usize].y = x_end;
+                                    }
+                                    else{
+                                        x = self.frame_free_zone_buffer[(y as usize*(self.width as usize))+x as usize].y;
+                                    }
+                                }
+                                else {
+                                    self.frame_buffer[(y as usize*(self.width as usize))+x as usize] = color.to_u32();
+                                }
 								
-								
-								
-								// y =  ax + b
-								// y - b = ax
-								// x = (y-b)/a
-								
-								// b = y - ax
-                                
-                                //if Self::is_in_triangle(
-                                //    _vertex_1, 
-                                //    _vertex_2, 
-                                //    _vertex_3, 
-                                //    cursor) {
-                                //    self.frame_buffer[(cursor.y as usize*(self.width as usize))+cursor.x as usize] = color.to_u32();
-                                //}
                             }
+                            x = x +1;
                         }
                     }
                 }
